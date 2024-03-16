@@ -12,17 +12,12 @@
 #include <queue>
 // define
 #define UseMax_threads
-// #define C_threads_num 6
+// #define C_threads_num 36
 
-constexpr std::uint32_t BATCH_SIZE = 24000;
+uint64_t prime_count = 0; // Initialize the prime count
+constexpr std::uint32_t BATCH_SIZE = 2800;
 
 bool is_prime(uint64_t n) {
-    if (n < 2) {
-        return false;
-    }
-    if (n == 2 || n == 3) {
-        return true;
-    }
     if (n % 2 == 0 || n % 3 == 0) {
         return false;
     }
@@ -41,15 +36,10 @@ void worker(std::atomic<uint64_t>& current_number,
     std::mutex& queue_mutex) {
     while (!termination_event) {
         uint64_t number = current_number.fetch_add(2, std::memory_order_acq_rel);
-        bool prime = false;
-        if (number == 2) {
-            prime = true;
-        }
-        else if (number > 2 && (number % 2 != 0) && is_prime(number)) {
-            prime = true;
-        }
-        if (prime) {
+        
+        if (number % 2 != 0 && is_prime(number)) {
             std::lock_guard<std::mutex> lock(queue_mutex);
+            prime_count++; 
             prime_queue.push(number);
         }
     }
@@ -104,6 +94,7 @@ int main() {
     #endif
     std::ofstream file_init("Prime_nums.txt", std::ios::app);
     file_init << 2 << std::endl;
+    file_init << 3 << std::endl;
     file_init.close();
     std::
         vector<std::
@@ -117,8 +108,6 @@ int main() {
     std::
         mutex queue_mutex;
 
-    uint64_t last_prime = 2; // Initialize the last processed prime number
-    uint64_t prime_count = 0; // Initialize the prime count
     auto start_time =
         std::
         chrono::
@@ -180,7 +169,7 @@ int main() {
             chrono::
             duration<double> time_diff =
             current_time - previous_time;
-        if (time_diff.count() >= 0.1) { // Update the speed counter every 0.1 seconds
+        if (time_diff.count() >= 5) { // Update the speed counter every 0.1 seconds
             std::
                 cout <<
                 "Speed: " <<
@@ -200,19 +189,6 @@ int main() {
                 chrono::
                 milliseconds(20));
 
-        // Read the current prime count from the log file
-        std::ifstream file("Prime_nums.txt");
-        if (file.is_open()) {
-            std::string line;
-            while (std::getline(file, line)) {
-                uint64_t prime = std::stoull(line);
-                if (prime > last_prime) {
-                    last_prime = prime;
-                    prime_count++;
-                }
-            }
-            file.close();
-        }
     }
 
     termination_event = true;
