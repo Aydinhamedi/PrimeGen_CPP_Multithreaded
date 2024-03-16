@@ -169,7 +169,7 @@ int main() {
             chrono::
             duration<double> time_diff =
             current_time - previous_time;
-        if (time_diff.count() >= 5) { // Update the speed counter every 0.1 seconds
+        if (time_diff.count() >= 0.5) { // Update the speed counter every 0.5 seconds
             std::
                 cout <<
                 "Speed: " <<
